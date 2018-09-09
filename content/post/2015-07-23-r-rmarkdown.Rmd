@@ -1,0 +1,18 @@
+---
+title: "About Me"
+author: "Kim Eng Ky"
+date: 2018-09-05T21:13:14-05:00
+categories: ["R"]
+tags: ["R Markdown", "plot", "regression"]
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(collapse = TRUE)
+```
+
+* I was born and grew up in Cambodia.
+* In August 2010, I moved to Flekke, Norway to attend UWC Red Cross Nordic for two years.
+* In August 2012, I moved to Saint Paul, MN to attend Macalester College. I graduated in May 2016 with a double major in Economics and Statistics. 
+* In July 2016, I moved to Washington, D.C. to start a research analyst position with the Brattle Group, an economic consulting firm. 
+* In February 2017, I moved back to Minneapolis, MN to start a data scientist position with Metro Transit, a primary transit provider in the Twin Cities. 
+* In August 2018, I switched to working as a data scientist at the UnitedHealth Group in Minnetonka, MN. 
