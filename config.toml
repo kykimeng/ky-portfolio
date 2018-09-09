@@ -1,11 +1,10 @@
 theme = "hyde"
-baseURL = "http://example.org/"
+baseURL = "http://ky-kimeng.netlify.com/"
 languageCode = "en-us"
 title = "Kim Eng KY"
 enableEmoji = true
 ignoreFiles = ["\\.Rmd$", "\\.Rmarkdown$", "_files$", "_cache$"]
 
 [params]
-  themeColor = "theme-base-0c"
   name = "Kim Eng KY"
   description = "\"It is a capital mistake to theorize before one has data.\" - Sherlock Holmes"
