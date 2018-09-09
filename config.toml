@@ -1,5 +1,5 @@
 theme = "hyde"
-baseURL = "http://ky-kimeng.netlify.com/"
+baseURL = "https://ky-kimeng.netlify.com/"
 languageCode = "en-us"
 title = "Kim Eng KY"
 ignoreFiles = ["\\.Rmd$", "\\.Rmarkdown$", "_files$", "_cache$"]
