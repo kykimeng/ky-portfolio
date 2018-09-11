@@ -1,0 +1,20 @@
+---
+title: Bus Speed Visualization
+author: Kim Eng KY
+date: '2018-09-09'
+slug: bus-speed-viz
+categories:
+  - Visualization
+tags:
+  - R
+  - data viz
+summary: 
+output:
+  blogdown::html_page:
+    toc: true
+    number_sections: true
+    toc_depth: 1
+---
+
+**Note: This post is based on one of the projects I did during my tenure at [Metro Transit](metrotransit.org). You can find a copy of a BitBucket repository containing functions used in this post [here](https://bitbucket.org/metrotransitsi/speed-calculation/src/master/).**
+
