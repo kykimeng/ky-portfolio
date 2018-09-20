@@ -20,7 +20,7 @@ theme = "hyde-hyde"
     dateformat = "Jan 2, 2006"
     highlightjs = true
     highlightjsstyle = "github"
-    ignoreFiles = ["\\.Rmd$", "\\.Rmarkdown$", "_files$", "_cache$"]
+    ignoreFiles = ["\\.Rmarkdown$", "_files$", "_cache$"]
     # please choose either GraphComment or Disqus
 
 ## Social Accounts
