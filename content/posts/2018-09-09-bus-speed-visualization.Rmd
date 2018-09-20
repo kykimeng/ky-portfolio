@@ -16,7 +16,7 @@ output:
     toc_depth: 1
 ---
 
-**Note: This post is based on one of the projects I did during my tenure at [Metro Transit](metrotransit.org). You can find a copy of a BitBucket repository containing functions used in this post [here](https://bitbucket.org/metrotransitsi/speed-calculation/src/master/).**
+*Note: This post is based on one of the projects I did during my tenure at [Metro Transit](metrotransit.org). You can find a copy of a BitBucket repository containing functions used in this post [here](https://bitbucket.org/metrotransitsi/speed-calculation/src/master/).*
 
 Within the past couple decades, many transit agencies across North America and all over the world have started to collect location records of every bus using the Automatic Vehicle Location (AVL) technology. This technology allows buses to generate their locations for as frequent as every few seconds. With this new source of data, new ways of visualizing and understanding bus speed need to be adopted. 
 
