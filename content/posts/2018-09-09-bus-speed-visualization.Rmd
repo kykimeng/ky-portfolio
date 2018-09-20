@@ -18,3 +18,27 @@ output:
 
 **Note: This post is based on one of the projects I did during my tenure at [Metro Transit](metrotransit.org). You can find a copy of a BitBucket repository containing functions used in this post [here](https://bitbucket.org/metrotransitsi/speed-calculation/src/master/).**
 
+Within the past couple decades, many transit agencies across North America and all over the world have started to collect location records of every bus using the Automatic Vehicle Location (AVL) technology. This technology allows buses to generate their locations for as frequent as every few seconds. With this new source of data, new ways of visualizing and understanding bus speed need to be adopted. 
+
+During my time at Metro Transit, I had the great opportunity to work closely with these data. We actually designed a Shiny application that directly connects to the databases so that users can pull the data and visualize them all in one place. However, this post is not about the Shiny application. I would like to show a few of the visualizations Metro Transit uses to monitor its bus speed.
+
+Before going into the visualization, I want to list the steps it takes to turn the location records into something plottable.
+
+1. obtain street segment of interest (subset of a bus route pattern line; needs to be a SpatialLines or SpatialLinesDataFrame object)
+2. clean, optionally filter, and summarize raw AVL messages (location records) from operational source
+3. gather additional reference data like stop and traffic signal locations
+4. calculate point estimates of speed at each location and time
+5. interpolate speeds along segments based on observed speeds
+6. plot in a variety of ways:
+  + mean or other summary value along route line
+  + "heatmap" of speed in space-time grid
+  + biplot of speed versus distance traveled along route
+  + biplot of speed versus time elapsed during service
+  
+### Data
+
+In this example, Metro Transit route 2 data are utilized. Route 2 is a high-frequency bus route serving Minneapolis and the University of Minnesota. After defining the street segment of interest, along Franklin Ave, below is the plot of the raw location records around the street segment. 
+
+
+### Speed along Route Line
+
