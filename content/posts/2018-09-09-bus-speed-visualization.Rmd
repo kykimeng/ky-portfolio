@@ -1,13 +1,15 @@
 ---
 title: Bus Speed Visualization
 author: Kim Eng KY
-date: '2018-09-09'
+date: '2018-09-21'
 slug: bus-speed-viz
 categories:
   - Visualization
 tags:
   - R
   - data viz
+  - ggplot2
+  - leaflet
 summary: 
 output:
   blogdown::html_page:
@@ -16,29 +18,70 @@ output:
     toc_depth: 1
 ---
 
-*Note: This post is based on one of the projects I did during my tenure at [Metro Transit](metrotransit.org). You can find a copy of a BitBucket repository containing functions used in this post [here](https://bitbucket.org/metrotransitsi/speed-calculation/src/master/).*
+**Note: This post is based on one of the projects I did during my tenure at [Metro Transit](metrotransit.org). You can find a copy of a BitBucket repository containing functions used in this post [here](https://bitbucket.org/metrotransitsi/speed-calculation/src/master/).**
 
-Within the past couple decades, many transit agencies across North America and all over the world have started to collect location records of every bus using the Automatic Vehicle Location (AVL) technology. This technology allows buses to generate their locations for as frequent as every few seconds. With this new source of data, new ways of visualizing and understanding bus speed need to be adopted. 
+**Disclaimer: Opinions and comments expressed are solely my own and do not express the views or opinions of Metro Transit.**
 
-During my time at Metro Transit, I had the great opportunity to work closely with these data. We actually designed a Shiny application that directly connects to the databases so that users can pull the data and visualize them all in one place. However, this post is not about the Shiny application. I would like to show a few of the visualizations Metro Transit uses to monitor its bus speed.
+Within the past couple decades, many transit agencies across North America and all over the world have started to collect location records of every bus using the [Automatic Vehicle Location (AVL)](https://en.wikipedia.org/wiki/Automatic_vehicle_location) technology. This technology allows buses to generate their locations for as frequent as every few seconds. With this new source of data, new ways of visualizing and understanding bus speed need to be adopted. 
 
-Before going into the visualization, I want to list the steps it takes to turn the location records into something plottable.
+During my time at Metro Transit, I had the great opportunity to work closely with these data. We designed a Shiny application that directly connects to the databases so that users can pull the data and visualize them all in one place. However, this post is not about the Shiny application. I would like to show a few of the visualizations Metro Transit uses to monitor its bus speed.
 
-1. obtain street segment of interest (subset of a bus route pattern line; needs to be a SpatialLines or SpatialLinesDataFrame object)
-2. clean, optionally filter, and summarize raw AVL messages (location records) from operational source
-3. gather additional reference data like stop and traffic signal locations
-4. calculate point estimates of speed at each location and time
-5. interpolate speeds along segments based on observed speeds
-6. plot in a variety of ways:
-  + mean or other summary value along route line
-  + "heatmap" of speed in space-time grid
-  + biplot of speed versus distance traveled along route
-  + biplot of speed versus time elapsed during service
-  
-### Data
+# Data 
 
 In this example, Metro Transit route 2 data are utilized. Route 2 is a high-frequency bus route serving Minneapolis and the University of Minnesota. After defining the street segment of interest, along Franklin Ave, below is the plot of the raw location records around the street segment. 
 
+![Figure 1: Route 2 raw location records](/img/raw-lm.png)
 
-### Speed along Route Line
+As you can see in Figure 1, the locations are pretty messy. To calculate bus speed along Franklin Ave, we only want to keep good records that are on Franklin Ave. To do this, we drop all location records that are more than a specified distance away from the street segment of interest. In this example, we only keep records that are within 20 meters from Franklin Ave. 
 
+![Figure 2: Cleaned location records](/img/cleaned-lm.png)
+
+# Speed Calculation
+
+Now that we have a clean dataset to work with, we can start doing our speed calculation. For any two consecutive locations on a trip, we can calculate the average speed the bus traveled between them. We, then, calculate the average speed for each location from all the trips. 
+
+![Figure 3: Speed estimation](/img/speed-calc.png)
+
+For example, in Figure 3, estimated bus speed traveling from `A` to `B` would be:
+
+$$speed_{AB} = average(20, 15, 15, 15, 20) = 17 \text{mph}$$
+
+The first three speeds are from Bus 1 because the *AB* segment overlaps those three speeds, and two for Bus 2. This method is not perfect because each speed is weighted equally regardless of how much they contribute to the segment. However, in practice, we set our segment to be one meter and the speed is averaged across many trips, so that would not be a big issue. 
+
+# Speed Visualization
+
+There are many ways you can visualize bus speed, be it on a map or a line plot. Below are a few examples.
+
+## Speed along route line
+
+[`leaflet`](https://rstudio.github.io/leaflet/) package in R provides an easy, yet flexible, way for interactive mapping. Figure 4 below shows average speed for Metro Transit Route 2 at every meter along the street segment of interest on Franklin Ave. The speeds shown are average across three weekdays, traveling eastbound. If you hover over any point along the line, it will show the estimated speed. Each blue marker on the map represents route 2 bus stops, and each red cross icon represents signalized intersections.
+
+<iframe src="/html/speed-line.html" width=1000 height = 300]></iframe>
+Figure 4: Speed along route line
+
+
+From this map, we can easily see that buses slow down as it reaches their stops or hitting a red light at a signalized intersection.
+
+## Grid Heatmap
+
+Plotting speed on a map makes it very easy to identify the locations of low or high speed. However, when one needs to compare speeds across time of day or day of week, it is not practical to plot many maps. A grid heatmap, although takes away the spatial aspect of the visualization, provides a way to easily compare across time of day or day of week. In Figure 5 below, you can see Metro Transit route 2 speed along the Franklin Ave segment for every hour between 6 am and 8 pm. On the Y-axis, we have bus stop identifiers. 
+
+![Figure 5: Grid Heatmap by Hour](/img/grid-heatmap.png)
+
+With this visualization, patterns start to emerge. For example, buses slow down between stops 15668 and 13310 between 3 pm and 5 pm more than any other time throughout the day.
+
+## Speed by Distance Plot
+
+In transportation planning, sometimes knowing the average speed is not enough. On-time performance is crucial to the operations, but reliability is also just as important. Range of speed can be used as a proxy for reliability. Larger variance of speed can be interpreted as less reliable. Figure 6 below shows a speed by distance plot of Metro Transit route 2 speed, with 80\% confidence interval. Black dotted lines show where bus stops are, and red dashed lines show where traffic signals are. From this plot, not only can we check whether speed varies along the route, but also how variable it is at any location. 
+
+![Figure 6: Speed by Distance](/img/speed-distance.png)
+
+## Speghetti Plot
+
+With each of the three plots above, it is very difficult, if not impossible, to detect an anamoly. With a speghetti plot (see Figure 7), individual trip is plotted. We have distance along the street segment on the X-axis, and cumulative time on the Y-axis. So, if there are any bad trips that may affect aggregated speed values, they can be easily spotted. In this plot, a vertical line means that the bus stopped at that location for a period of time, and a flatter line means the bus traveled faster along that segment. 
+
+![Figure 7: Spaghetti Plot](/img/spaghetti.png)
+
+# Wrapping Up
+
+I like these plots because although their data source is the same, they tell different aspects of a story. When putting together, the story is more complete. However, this is by no means an exhaustive list of ways to visualize bus speed. 
