@@ -4,9 +4,9 @@ languageCode = "en"
 
 title = "Kim Eng KY"
 theme = "hyde-hyde"
-
+    
 ## Hugo Built-in Features
-# disqusShortname = "your-disqus-shortname"
+disqusShortname = "ky-portfolio"
 # googleAnalytics = "your-google-analytics-id"
 # enableRobotsTXT = true
 
@@ -21,7 +21,8 @@ theme = "hyde-hyde"
     highlightjs = true
     highlightjsstyle = "github"
     ignoreFiles = ["_files$", "_cache$"]
-    # please choose either GraphComment or Disqus
+    math = true
+    copyright = "&copy; 2018. All rights reserved."
 
 ## Social Accounts
 [params.social]
