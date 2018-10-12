@@ -1,0 +1,484 @@
+---
+title: Introduction to data.table
+author: Kim Eng KY
+date: '2018-10-11'
+slug: intro-to-data-table
+categories: 
+  - R Package
+tags:
+  - R
+  - data.table
+  - data manipulation
+lastmod: '2018-10-11T20:20:51-05:00'
+layout: post
+type: post
+highlight: no
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(data.table)
+library(ggplot2)
+```
+
+This week, I had the opportunity to present R `data.table` package to R Ladies Twin Cities meetup. With the help of another R Lady, **Haema Nilakanta**, we put together this tutorial on the package.
+
+This document is by no means exhaustive. However, it is a good start for those who would like to get introduced to `data.table`. 
+
+# Overview
+
+### What is `data.table`?
+
+"`data.table` is an R package that provides an enhanced version of `data.frame`s." It provides a faster and more efficient way to do data manipulation while drastically reducing the amount of memory required. It's an excellent addition to your R venacular, particularly if you work with massive datasets. 
+
+### Install and load
+
+```{r,eval=F}
+# install 
+install.packages("data.table")
+# load 
+library(data.table)
+```
+
+# The Basics
+
+```{r,echo=F, fig.width=10, fig.height=5}
+ggplot() + 
+  geom_text(aes(x = 0, y = 0, label = "DT[i, j, by]"), size = 16) +
+  theme_classic() +
+  theme(axis.line = element_blank(), axis.title = element_blank(), 
+        axis.text = element_blank(), axis.ticks = element_blank()) +
+  geom_line(aes(x = c(-2, -.3), y = c(-2, -0.25)), arrow = arrow(), size = 1) +
+  geom_line(aes(x = c(0.15, 0.15), y = c(-2, -0.25)), arrow = arrow(), size = 1) +
+  geom_line(aes(x = c(.9, 2), y = c(-.25, -2)), arrow = arrow(ends = "first"), size = 1) +
+  geom_label(aes(x = c(-2.5, 0.15, 3), y = -2, label = c("WHERE\n(which rows)", "SELECT\n(do what)", "GROUP BY\n(group by what)")), size = 10) +
+  scale_x_continuous(limits = c(-4, 5)) +
+  scale_y_continuous(limits = c(-2.2, .5))
+```
+
+A lot of `data.table` commands are similar to the usual R `data.frame`. For example, you can create a data.table similar to how you create a new `data.frame`. 
+
+```{r}
+# create a data.table
+DT <- data.table(x = c(1, 2, 3), y = c('a', 'b', 'c'))
+
+# turn iris data.frame to a data.table object
+data("iris")
+iris_dt <- as.data.table(iris)
+# setDT(iris) # turn iris into a data.table instead of making a copy
+# print
+iris_dt
+```
+
+When a `data.table` has more than 100 rows, it automatically prints the first five and the last five rows. 
+
+### Subset
+
+Select first 3 rows:
+
+```{r}
+# data.frame
+iris[1:3,]
+# data.table
+iris_dt[1:3]
+```
+
+Find rows where `Species == "setosa"`:
+
+```{r,eval=F}
+# data.frame
+iris[iris$Species == "setosa",]
+# data.table
+iris_dt[Species == "setosa"]
+```
+
+Find rows where `Species == "setosa"` and `Sepal.Length == 5`:
+
+```{r,eval=F}
+# data.frame
+iris[iris$Species == "setosa" & iris$Sepal.Length == 5,]
+# data.table
+iris_dt[Species == "setosa" & Sepal.Length == 5]
+# advanced data.table
+tmp <- data.table(Species = "setosa", Sepal.Length = 5, key = c("Species", "Sepal.Length"))
+setkey(iris_dt, Species, Sepal.Length)
+iris_dt[tmp]
+```
+
+Notice with the usual `data.frame`, you end up calling the dataset multiple times, once to get the column information and every time a column is referenced. Meanwhile in the `data.table` package, you only need to refer to the dataset once. 
+
+### Manipulation on Columns and Group By
+
+Select subset of columns:
+
+```{r,eval=F}
+# data.frame
+iris[, c("Species", "Petal.Width", "Petal.Length")]
+# data.table
+iris_dt[, .(Species, Petal.Width, Petal.Length)]
+```
+
+Calculate the mean value of `Sepal.Length`:
+
+```{r}
+# data.frame
+mean(iris$Sepal.Length)
+# data.table
+iris_dt[, mean(Sepal.Length)]
+```
+
+One major advantage of `data.table` is it can aggregate data with the table setting. For example, instead of using the `aggregate` function to compute the mean `Sepal.Length` by `Species`, we can do this directly in the `iris_dt`. This saves us a good chunk of time especially when we have a lot of rows to take a function over. 
+
+```{r}
+# data.frame
+aggregate(Sepal.Length ~ Species, iris, mean) # no easy way to do this in base R
+# data.table
+iris_dt[, mean(Sepal.Length), by = .(Species)]
+```
+
+The `data.table` syntax of `.()` basically calls on certain columns. 
+
+Consider now we only want to calculate mean `Sepal.Length` by `Species` where `Sepal.Width >= 3`, instead of first having to subset the entire dataset and then running the function we can do this in one step and create a new variable called `mean_sepal_length`. 
+
+```{r}
+# data.frame
+aggregate(Sepal.Length ~ Species, iris[iris$Sepal.Width >= 3,], mean)
+# data.table
+iris_dt[Sepal.Width >= 3, .(mean_sepal_length = mean(Sepal.Length)), by = .(Species)]
+```
+
+You can also use expressions within `by` statement. For example, calculate mean sepal length for `Sepal.Width > 3` and `Sepal.Width <= 3`:
+
+```{r}
+iris_dt[, mean(Sepal.Length), by = .(width_larger_than_3 = Sepal.Width > 3)]
+```
+
+Another powerful tool of this package is the `.N` command. This is a counting tool that holds the number of observations in the current group. For example, if we want to calculate the number of rows:
+
+```{r}
+# data.frame
+nrow(iris)
+# data.table
+iris_dt[, .N]
+```
+
+Or calculate number of unique values for `Species`:
+
+```{r}
+# data.frame
+length(unique(iris$Species))
+# data.table
+iris_dt[, uniqueN(Species)]
+```
+
+Or calculate number of observations by `Species`:
+
+```{r}
+# data.frame
+data.frame(table(iris$Species))
+# data.table
+iris_dt[, .N, Species]
+```
+
+Multiple operations in one go: calculate mean and number of operations by `Species` 
+
+```{r}
+# data.table
+iris_dt[, .(mean_sepal_length = mean(Sepal.Length), no_obs = .N), by = .(Species)]
+```
+
+A similar command to `.N` is `.I` which holds the row numbers, and can be assigned to a variable.
+
+```{r}
+# return row numbers
+iris_dt[, .I]
+# assign row numbers to variable row_id
+iris_dt[, row_id := .I]
+head(iris_dt, 3)
+```
+
+`.GRP` command allows you to add unique id to groups as identified by `by` statement. 
+
+```{r}
+iris_dt[, .GRP]
+iris_dt[, .GRP, by = .(Species, sepal_width_larger_than_3 = Sepal.Width > 3)]
+```
+
+### Keys
+
+Once you get more comfortable with `data.table`, you can start to take advantage of its unique options. One way to really speed up your use of a large dataset is by setting the key(s). This allows the merging of multiple datasets or subsetting to go much faster. `data.table`s are also sorted by their keys. 
+
+Sort by `Species` and `Sepal.Length`:
+
+```{r,eval=F}
+# data.frame
+iris[with(iris, order(Species, Sepal.Length)), ]
+# data.table
+iris_dt[order(Species, Sepal.Length)] # does not store the ordering, unless assign to a variable name
+setkey(iris_dt, Species, Sepal.Length) # keys are added; data.table is always sorted by its key columns
+```
+
+Calculate mean `Sepal.Width` by `Species` and order the results by `Species`:
+
+```{r,eval=F}
+# data.frame
+tmp_iris <- aggregate(Sepal.Width ~ Species, iris, mean)
+tmp_iris[with(tmp_iris, order(Species)),]
+# data.table
+iris_dt[, .(mean_sepal_width = mean(Sepal.Width)), keyby = .(Species)]
+```
+
+If it is not necessary to keep the original ordering of the variable(s) in `by` statement, using `keyby` can speed up even more. And the resulting `data.table` is sorted by the variable(s) in the `keyby` statement. 
+
+### Joins
+
+Inner join two `data.table`s:
+
+```{r}
+dt1 <- data.table(x = c(1, 2, 3), y = c("a", "b", "c"), key = c("y"))
+dt2 <- data.table(y = c("a", "c", "d", "e"), z = c(10, 20, 30, 40), key = c("y")) 
+dt1[dt2, nomatch = 0]
+```
+
+```{r,eval=F}
+# or
+dt1[dt2, on = .(y), nomatch = 0] # equi: merge(dt1, dt2)
+```
+
+`on` needs to be specified if no keys are set, or if `dt1` and `dt2` do not have the exact same keys, or if you want to join the two `data.table`s using variables other than the keys.
+
+Left/Right joins:
+
+```{r}
+# keep everything from dt2
+dt1[dt2, on = .(y)] # equi: merge(dt1, dt2, all.y = TRUE)
+# keep everything from dt1
+dt2[dt1, on = .(y)] # equi: merge(dt1, dt2, all.x = TRUE)
+```
+
+Full joins:
+
+```{r}
+merge(dt1, dt2, all = TRUE)
+```
+
+### Defining function `:=`
+
+You can define new variables in `data.table` with the `:=` function. 
+
+```{r}
+# create a new variable called newIris
+iris_dt[, newIris := Petal.Width/Petal.Length]
+head(iris_dt, 3)
+
+# create a new variable mean_petal_width by species
+iris_dt[, mean_petal_width := mean(Petal.Width), .(Species)]
+head(iris_dt, 3)
+```
+
+Or, you can create multiple variables all in one go
+
+```{r,eval=F}
+iris_dt[, `:=` (newIris = Petal.Width/Petal.Length, 
+                row_id = .I)]
+# or
+iris_dt[, c("newIris", "row_id") := list(Petal.Width/Petal.Length, .I)]
+```
+
+One great benefit of `data.table` is the ability to sub-assign by reference.
+
+```{r}
+# create a new variable setosa_dummy which equals 1 for setosa species, NA otherwise
+iris_dt[Species == "setosa", setosa_dummy := 1]
+# rename setosa to renamed_setosa
+iris_dt[Species == "setosa", Species := "renamed_setosa"]
+head(iris_dt, 3)
+```
+
+You can also use `:=` to remove columns.
+
+```{r}
+# remove newIris column
+iris_dt[, newIris := NULL]
+```
+
+```{r,eval=F}
+# remove mean_petal_width and row_id 
+iris_dt[, c("mean_petal_width", "row_id", "setosa_dummy") := NULL]
+# or
+cols <- c("mean_petal_width", "row_id", "setosa_dummy")
+iris_dt[, (cols) := NULL]
+```
+
+```{r}
+# or 
+iris_dt[, `:=` (mean_petal_width = NULL, row_id = NULL, setosa_dummy = NULL)]
+head(iris_dt, 3)
+```
+
+# More Advanced 
+
+### `.SD` and `.SDcols`
+
+You can access columns of a `data.table` using `.SD` and `.SDcols` syntax. 
+
+Select all columns in `iris_dt`:
+
+```{r}
+iris_dt[, .SD]
+```
+
+Select subset of columns by specifying columns in `.SDcols`:
+
+```{r}
+iris_dt[, .SD, .SDcols = c("Species", "Sepal.Width", "Sepal.Length")]
+# or 
+iris_dt[, .SD, .SDcols = c(5,1,2)]
+```
+
+Round up all numeric columns to integer:
+
+```{r}
+iris_dt[, lapply(.SD, round), .SDcols = 1:4]
+# assign them to the original columns
+cols <- 1:4 # or cols <- c("Sepal.Length", "Sepal.Width", "Petal.Length", "Petal.Width")
+iris_dt[, (cols) := lapply(.SD, round), .SDcols = cols]
+head(iris_dt, 3)
+```
+
+Calculate mean by Species:
+
+```{r}
+iris_dt <- as.data.table(iris)
+# mean of all columns by Species
+iris_dt[, lapply(.SD, mean), by = Species]
+# or if we only want to calculate mean of Sepal columns by Species
+iris_dt[, lapply(.SD, mean), by = Species, .SDcols = c("Sepal.Length", "Sepal.Width")]
+```
+
+Select first and last rows:
+
+```{r}
+iris_dt[, .SD[c(1, .N)]]
+# by Species
+iris_dt[, .SD[c(1, .N)], by = Species]
+```
+
+### Chaining
+
+Chaining in `data.table` refers to using multiple `[]` in one command.
+
+Calculate mean `Sepal.Length` by Species, order by the calculated mean, and only keep rows with mean less than 6:
+
+```{r}
+iris_dt[, .(mean_sepal_length = mean(Sepal.Length)), by = Species][order(mean_sepal_length)][mean_sepal_length < 6]
+```
+
+### Suppressing Intermediate Output with `{}`
+
+Create a new variable `sepal_length_diff` as the difference from mean value:
+
+```{r}
+iris_dt[, sepal_length_diff := {
+  mean_sepal_length = mean(Sepal.Length)
+  diff_from_avg = Sepal.Length - mean_sepal_length
+  round(diff_from_avg, 1)
+}]
+# equi: iris_dt[, sepal_length_diff := {mean_sepal_length = mean(Sepal.Length); diff_from_avg = Sepal.Length - mean_sepal_length; round(diff_from_avg, 1)}]
+head(iris_dt, 3)
+# sanity check
+round(iris_dt[1, Sepal.Length] - iris_dt[, mean(Sepal.Length)], 1) == iris_dt[1, sepal_length_diff]
+```
+
+### Rolling Joins
+
+Let's **roll forward** (last observation carried forward):
+
+```{r}
+dt1 <- data.table(x = c("a", "b", "c", "d"), dt1_y = c(11.9, 21.4, 5.7, 18))
+dt2 <- data.table(dt2_y = c(10, 15, 20), z = c("one", "two", "three"))
+# add row ids and duplicate y  
+dt1[, `:=` (dt1_row_id = .I, joint_y = dt1_y)]
+dt2[, `:=` (dt2_row_id = .I, joint_y = dt2_y)]
+
+dt1
+dt2
+dt2[dt1, on = .(joint_y), roll = T] # equi: dt2[dt1, on = .(joint_y), roll = Inf]
+```
+
+This means that for each `dt1_y`, find `dt2_y` that is closest to `dt1_y` with the condition `dt1_y >= dt2_y`. This condition is the forward part of the rolling join. 
+
+Now, let's **roll backward** (next observation carried backward):
+
+```{r}
+dt2[dt1, on = .(joint_y), roll = -Inf]
+```
+
+Now the condition is reverse, i.e. `dt1_y <= dt2_y`. Pay attention to the minus sign in the `-Inf`; it is how you tell `data.table` to roll backward instead of forward. 
+
+Next, let's give them a window to roll on:
+
+```{r}
+dt2[dt1, on = .(joint_y), roll = -2]
+```
+
+Now the condition is restricted to only match if `dt1_y <= dt2_y - 2`. 
+
+```{r}
+dt2[dt1, on = .(joint_y), roll = 2]
+```
+
+The condition here is `dt1_y <= dt2_y + 2`.
+
+If you would like to roll both way to the nearest value instead, you can use `roll = "nearest"`. 
+
+```{r}
+dt2[dt1, on = .(joint_y), roll = "nearest"]
+```
+
+Another cool feature in `data.table` is the `foverlaps()` function which allows you to join tables based on range of values. Let's look at a couple examples. 
+
+```{r}
+# each window does not have to be equal
+dt3 <- data.table(min_y = c(0, 10, 15, 20), max_y = c(10, 15, 20, 30))
+setkey(dt3, min_y, max_y)
+# add a new column to dt1 and drop joint_y and dt1_row_id
+dt1[, `:=` (dt1_y_end = c(13, 25, 10, 22), joint_y = NULL, dt1_row_id = NULL)]
+setkey(dt1, dt1_y, dt1_y_end)
+foverlaps(dt1, dt3, type = "any")
+```
+
+When specifying `type = "any"`, as long as `[dt1_y, dt1_y_end]` and `[min_y, max_y]` ranges overlap it will give a match. 
+
+```{r}
+foverlaps(dt1, dt3, type = "within")
+```
+
+When specifying `type = "within"`, the only matches returned are those where `[dt1_y, dt1_y_end]` range is **within** `[min_y, max_y]`.
+
+# So, why should you use `data.table`?
+
+* concise and consistent syntax
+    + `DT[i, j, by]`
+* speed
+    + faster than base R and `dplyr`
+* efficient memory usage
+    + sub-assign by reference: `DT[x < 0, y := NA]`
+    + aggregate while joining: `DT1[DT2, list(z=sum(z)), by = .EACHI]` (equivalent to `DT1[, .(z=sum(z)), keyby=.(x,y)][DT2]`)
+* features
+    + `fread`, `fwrite`, automatic indexing, rolling joins, `foverlaps`, etc.
+
+More detail, [here](https://stackoverflow.com/questions/21435339/data-table-vs-dplyr-can-one-do-something-well-the-other-cant-or-does-poorly).
+
+
+# References
+
+1. Matt Dowle and Arun Srinivasan (2018). `data.table`: Extension of `data.frame`. R
+  package version 1.11.4. https://CRAN.R-project.org/package=data.table
+2. https://github.com/Rdatatable/data.table/wiki
+3. `data.table` vs. `dplyr`. https://stackoverflow.com/questions/21435339/data-table-vs-dplyr-can-one-do-something-well-the-other-cant-or-does-poorly
+4. Advaned tips and tricks with `data.table`. http://brooksandrew.github.io/simpleblog/articles/advanced-data-table/
+5. `data.table` cheat sheet. https://s3.amazonaws.com/assets.datacamp.com/img/blog/data+table+cheat+sheet.pdf
+6. Purpose of setting a key in `data.table`. https://stackoverflow.com/questions/20039335/what-is-the-purpose-of-setting-a-key-in-data-table
+7. `.EACHI` in `data.table`. https://stackoverflow.com/questions/27004002/eachi-in-data-table/27004566#27004566
+8. Understand `data.table` rolling joins. https://www.r-bloggers.com/understanding-data-table-rolling-joins/
