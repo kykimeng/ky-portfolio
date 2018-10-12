@@ -9,10 +9,8 @@ tags:
   - R
   - data.table
   - data manipulation
-lastmod: '2018-10-11T20:20:51-05:00'
-layout: post
-type: post
-highlight: no
+summary: 
+output: blogdown::html_page
 ---
 
 ```{r setup, include=FALSE}

@@ -1,0 +1,561 @@
+---
+title: Introduction to data.table
+author: Kim Eng KY
+date: '2018-10-11'
+slug: intro-to-data-table
+categories: 
+  - R Package
+tags:
+  - R
+  - data.table
+  - data manipulation
+summary: 
+output: blogdown::html_page
+---
+
+
+
+<p>This week, I had the opportunity to present R <code>data.table</code> package to R Ladies Twin Cities meetup. With the help of another R Lady, <strong>Haema Nilakanta</strong>, we put together this tutorial on the package.</p>
+<p>This document is by no means exhaustive. However, it is a good start for those who would like to get introduced to <code>data.table</code>.</p>
+<div id="overview" class="section level1">
+<h1>Overview</h1>
+<div id="what-is-data.table" class="section level3">
+<h3>What is <code>data.table</code>?</h3>
+<p>“<code>data.table</code> is an R package that provides an enhanced version of <code>data.frame</code>s.” It provides a faster and more efficient way to do data manipulation while drastically reducing the amount of memory required. It’s an excellent addition to your R venacular, particularly if you work with massive datasets.</p>
+</div>
+<div id="install-and-load" class="section level3">
+<h3>Install and load</h3>
+<pre class="r"><code># install 
+install.packages(&quot;data.table&quot;)
+# load 
+library(data.table)</code></pre>
+</div>
+</div>
+<div id="the-basics" class="section level1">
+<h1>The Basics</h1>
+<p><img src="/posts/2018-10-11-intro-to-data-table_files/figure-html/unnamed-chunk-2-1.png" width="960" /></p>
+<p>A lot of <code>data.table</code> commands are similar to the usual R <code>data.frame</code>. For example, you can create a data.table similar to how you create a new <code>data.frame</code>.</p>
+<pre class="r"><code># create a data.table
+DT &lt;- data.table(x = c(1, 2, 3), y = c(&#39;a&#39;, &#39;b&#39;, &#39;c&#39;))
+
+# turn iris data.frame to a data.table object
+data(&quot;iris&quot;)
+iris_dt &lt;- as.data.table(iris)
+# setDT(iris) # turn iris into a data.table instead of making a copy
+# print
+iris_dt</code></pre>
+<pre><code>##      Sepal.Length Sepal.Width Petal.Length Petal.Width   Species
+##   1:          5.1         3.5          1.4         0.2    setosa
+##   2:          4.9         3.0          1.4         0.2    setosa
+##   3:          4.7         3.2          1.3         0.2    setosa
+##   4:          4.6         3.1          1.5         0.2    setosa
+##   5:          5.0         3.6          1.4         0.2    setosa
+##  ---                                                            
+## 146:          6.7         3.0          5.2         2.3 virginica
+## 147:          6.3         2.5          5.0         1.9 virginica
+## 148:          6.5         3.0          5.2         2.0 virginica
+## 149:          6.2         3.4          5.4         2.3 virginica
+## 150:          5.9         3.0          5.1         1.8 virginica</code></pre>
+<p>When a <code>data.table</code> has more than 100 rows, it automatically prints the first five and the last five rows.</p>
+<div id="subset" class="section level3">
+<h3>Subset</h3>
+<p>Select first 3 rows:</p>
+<pre class="r"><code># data.frame
+iris[1:3,]</code></pre>
+<pre><code>##   Sepal.Length Sepal.Width Petal.Length Petal.Width Species
+## 1          5.1         3.5          1.4         0.2  setosa
+## 2          4.9         3.0          1.4         0.2  setosa
+## 3          4.7         3.2          1.3         0.2  setosa</code></pre>
+<pre class="r"><code># data.table
+iris_dt[1:3]</code></pre>
+<pre><code>##    Sepal.Length Sepal.Width Petal.Length Petal.Width Species
+## 1:          5.1         3.5          1.4         0.2  setosa
+## 2:          4.9         3.0          1.4         0.2  setosa
+## 3:          4.7         3.2          1.3         0.2  setosa</code></pre>
+<p>Find rows where <code>Species == &quot;setosa&quot;</code>:</p>
+<pre class="r"><code># data.frame
+iris[iris$Species == &quot;setosa&quot;,]
+# data.table
+iris_dt[Species == &quot;setosa&quot;]</code></pre>
+<p>Find rows where <code>Species == &quot;setosa&quot;</code> and <code>Sepal.Length == 5</code>:</p>
+<pre class="r"><code># data.frame
+iris[iris$Species == &quot;setosa&quot; &amp; iris$Sepal.Length == 5,]
+# data.table
+iris_dt[Species == &quot;setosa&quot; &amp; Sepal.Length == 5]
+# advanced data.table
+tmp &lt;- data.table(Species = &quot;setosa&quot;, Sepal.Length = 5, key = c(&quot;Species&quot;, &quot;Sepal.Length&quot;))
+setkey(iris_dt, Species, Sepal.Length)
+iris_dt[tmp]</code></pre>
+<p>Notice with the usual <code>data.frame</code>, you end up calling the dataset multiple times, once to get the column information and every time a column is referenced. Meanwhile in the <code>data.table</code> package, you only need to refer to the dataset once.</p>
+</div>
+<div id="manipulation-on-columns-and-group-by" class="section level3">
+<h3>Manipulation on Columns and Group By</h3>
+<p>Select subset of columns:</p>
+<pre class="r"><code># data.frame
+iris[, c(&quot;Species&quot;, &quot;Petal.Width&quot;, &quot;Petal.Length&quot;)]
+# data.table
+iris_dt[, .(Species, Petal.Width, Petal.Length)]</code></pre>
+<p>Calculate the mean value of <code>Sepal.Length</code>:</p>
+<pre class="r"><code># data.frame
+mean(iris$Sepal.Length)</code></pre>
+<pre><code>## [1] 5.843333</code></pre>
+<pre class="r"><code># data.table
+iris_dt[, mean(Sepal.Length)]</code></pre>
+<pre><code>## [1] 5.843333</code></pre>
+<p>One major advantage of <code>data.table</code> is it can aggregate data with the table setting. For example, instead of using the <code>aggregate</code> function to compute the mean <code>Sepal.Length</code> by <code>Species</code>, we can do this directly in the <code>iris_dt</code>. This saves us a good chunk of time especially when we have a lot of rows to take a function over.</p>
+<pre class="r"><code># data.frame
+aggregate(Sepal.Length ~ Species, iris, mean) # no easy way to do this in base R</code></pre>
+<pre><code>##      Species Sepal.Length
+## 1     setosa        5.006
+## 2 versicolor        5.936
+## 3  virginica        6.588</code></pre>
+<pre class="r"><code># data.table
+iris_dt[, mean(Sepal.Length), by = .(Species)]</code></pre>
+<pre><code>##       Species    V1
+## 1:     setosa 5.006
+## 2: versicolor 5.936
+## 3:  virginica 6.588</code></pre>
+<p>The <code>data.table</code> syntax of <code>.()</code> basically calls on certain columns.</p>
+<p>Consider now we only want to calculate mean <code>Sepal.Length</code> by <code>Species</code> where <code>Sepal.Width &gt;= 3</code>, instead of first having to subset the entire dataset and then running the function we can do this in one step and create a new variable called <code>mean_sepal_length</code>.</p>
+<pre class="r"><code># data.frame
+aggregate(Sepal.Length ~ Species, iris[iris$Sepal.Width &gt;= 3,], mean)</code></pre>
+<pre><code>##      Species Sepal.Length
+## 1     setosa     5.029167
+## 2 versicolor     6.218750
+## 3  virginica     6.768966</code></pre>
+<pre class="r"><code># data.table
+iris_dt[Sepal.Width &gt;= 3, .(mean_sepal_length = mean(Sepal.Length)), by = .(Species)]</code></pre>
+<pre><code>##       Species mean_sepal_length
+## 1:     setosa          5.029167
+## 2: versicolor          6.218750
+## 3:  virginica          6.768966</code></pre>
+<p>You can also use expressions within <code>by</code> statement. For example, calculate mean sepal length for <code>Sepal.Width &gt; 3</code> and <code>Sepal.Width &lt;= 3</code>:</p>
+<pre class="r"><code>iris_dt[, mean(Sepal.Length), by = .(width_larger_than_3 = Sepal.Width &gt; 3)]</code></pre>
+<pre><code>##    width_larger_than_3       V1
+## 1:                TRUE 5.683582
+## 2:               FALSE 5.972289</code></pre>
+<p>Another powerful tool of this package is the <code>.N</code> command. This is a counting tool that holds the number of observations in the current group. For example, if we want to calculate the number of rows:</p>
+<pre class="r"><code># data.frame
+nrow(iris)</code></pre>
+<pre><code>## [1] 150</code></pre>
+<pre class="r"><code># data.table
+iris_dt[, .N]</code></pre>
+<pre><code>## [1] 150</code></pre>
+<p>Or calculate number of unique values for <code>Species</code>:</p>
+<pre class="r"><code># data.frame
+length(unique(iris$Species))</code></pre>
+<pre><code>## [1] 3</code></pre>
+<pre class="r"><code># data.table
+iris_dt[, uniqueN(Species)]</code></pre>
+<pre><code>## [1] 3</code></pre>
+<p>Or calculate number of observations by <code>Species</code>:</p>
+<pre class="r"><code># data.frame
+data.frame(table(iris$Species))</code></pre>
+<pre><code>##         Var1 Freq
+## 1     setosa   50
+## 2 versicolor   50
+## 3  virginica   50</code></pre>
+<pre class="r"><code># data.table
+iris_dt[, .N, Species]</code></pre>
+<pre><code>##       Species  N
+## 1:     setosa 50
+## 2: versicolor 50
+## 3:  virginica 50</code></pre>
+<p>Multiple operations in one go: calculate mean and number of operations by <code>Species</code></p>
+<pre class="r"><code># data.table
+iris_dt[, .(mean_sepal_length = mean(Sepal.Length), no_obs = .N), by = .(Species)]</code></pre>
+<pre><code>##       Species mean_sepal_length no_obs
+## 1:     setosa             5.006     50
+## 2: versicolor             5.936     50
+## 3:  virginica             6.588     50</code></pre>
+<p>A similar command to <code>.N</code> is <code>.I</code> which holds the row numbers, and can be assigned to a variable.</p>
+<pre class="r"><code># return row numbers
+iris_dt[, .I]</code></pre>
+<pre><code>##   [1]   1   2   3   4   5   6   7   8   9  10  11  12  13  14  15  16  17
+##  [18]  18  19  20  21  22  23  24  25  26  27  28  29  30  31  32  33  34
+##  [35]  35  36  37  38  39  40  41  42  43  44  45  46  47  48  49  50  51
+##  [52]  52  53  54  55  56  57  58  59  60  61  62  63  64  65  66  67  68
+##  [69]  69  70  71  72  73  74  75  76  77  78  79  80  81  82  83  84  85
+##  [86]  86  87  88  89  90  91  92  93  94  95  96  97  98  99 100 101 102
+## [103] 103 104 105 106 107 108 109 110 111 112 113 114 115 116 117 118 119
+## [120] 120 121 122 123 124 125 126 127 128 129 130 131 132 133 134 135 136
+## [137] 137 138 139 140 141 142 143 144 145 146 147 148 149 150</code></pre>
+<pre class="r"><code># assign row numbers to variable row_id
+iris_dt[, row_id := .I]
+head(iris_dt, 3)</code></pre>
+<pre><code>##    Sepal.Length Sepal.Width Petal.Length Petal.Width Species row_id
+## 1:          5.1         3.5          1.4         0.2  setosa      1
+## 2:          4.9         3.0          1.4         0.2  setosa      2
+## 3:          4.7         3.2          1.3         0.2  setosa      3</code></pre>
+<p><code>.GRP</code> command allows you to add unique id to groups as identified by <code>by</code> statement.</p>
+<pre class="r"><code>iris_dt[, .GRP]</code></pre>
+<pre><code>## [1] 1</code></pre>
+<pre class="r"><code>iris_dt[, .GRP, by = .(Species, sepal_width_larger_than_3 = Sepal.Width &gt; 3)]</code></pre>
+<pre><code>##       Species sepal_width_larger_than_3 GRP
+## 1:     setosa                      TRUE   1
+## 2:     setosa                     FALSE   2
+## 3: versicolor                      TRUE   3
+## 4: versicolor                     FALSE   4
+## 5:  virginica                      TRUE   5
+## 6:  virginica                     FALSE   6</code></pre>
+</div>
+<div id="keys" class="section level3">
+<h3>Keys</h3>
+<p>Once you get more comfortable with <code>data.table</code>, you can start to take advantage of its unique options. One way to really speed up your use of a large dataset is by setting the key(s). This allows the merging of multiple datasets or subsetting to go much faster. <code>data.table</code>s are also sorted by their keys.</p>
+<p>Sort by <code>Species</code> and <code>Sepal.Length</code>:</p>
+<pre class="r"><code># data.frame
+iris[with(iris, order(Species, Sepal.Length)), ]
+# data.table
+iris_dt[order(Species, Sepal.Length)] # does not store the ordering, unless assign to a variable name
+setkey(iris_dt, Species, Sepal.Length) # keys are added; data.table is always sorted by its key columns</code></pre>
+<p>Calculate mean <code>Sepal.Width</code> by <code>Species</code> and order the results by <code>Species</code>:</p>
+<pre class="r"><code># data.frame
+tmp_iris &lt;- aggregate(Sepal.Width ~ Species, iris, mean)
+tmp_iris[with(tmp_iris, order(Species)),]
+# data.table
+iris_dt[, .(mean_sepal_width = mean(Sepal.Width)), keyby = .(Species)]</code></pre>
+<p>If it is not necessary to keep the original ordering of the variable(s) in <code>by</code> statement, using <code>keyby</code> can speed up even more. And the resulting <code>data.table</code> is sorted by the variable(s) in the <code>keyby</code> statement.</p>
+</div>
+<div id="joins" class="section level3">
+<h3>Joins</h3>
+<p>Inner join two <code>data.table</code>s:</p>
+<pre class="r"><code>dt1 &lt;- data.table(x = c(1, 2, 3), y = c(&quot;a&quot;, &quot;b&quot;, &quot;c&quot;), key = c(&quot;y&quot;))
+dt2 &lt;- data.table(y = c(&quot;a&quot;, &quot;c&quot;, &quot;d&quot;, &quot;e&quot;), z = c(10, 20, 30, 40), key = c(&quot;y&quot;)) 
+dt1[dt2, nomatch = 0]</code></pre>
+<pre><code>##    x y  z
+## 1: 1 a 10
+## 2: 3 c 20</code></pre>
+<pre class="r"><code># or
+dt1[dt2, on = .(y), nomatch = 0] # equi: merge(dt1, dt2)</code></pre>
+<p><code>on</code> needs to be specified if no keys are set, or if <code>dt1</code> and <code>dt2</code> do not have the exact same keys, or if you want to join the two <code>data.table</code>s using variables other than the keys.</p>
+<p>Left/Right joins:</p>
+<pre class="r"><code># keep everything from dt2
+dt1[dt2, on = .(y)] # equi: merge(dt1, dt2, all.y = TRUE)</code></pre>
+<pre><code>##     x y  z
+## 1:  1 a 10
+## 2:  3 c 20
+## 3: NA d 30
+## 4: NA e 40</code></pre>
+<pre class="r"><code># keep everything from dt1
+dt2[dt1, on = .(y)] # equi: merge(dt1, dt2, all.x = TRUE)</code></pre>
+<pre><code>##    y  z x
+## 1: a 10 1
+## 2: b NA 2
+## 3: c 20 3</code></pre>
+<p>Full joins:</p>
+<pre class="r"><code>merge(dt1, dt2, all = TRUE)</code></pre>
+<pre><code>##    y  x  z
+## 1: a  1 10
+## 2: b  2 NA
+## 3: c  3 20
+## 4: d NA 30
+## 5: e NA 40</code></pre>
+</div>
+<div id="defining-function" class="section level3">
+<h3>Defining function <code>:=</code></h3>
+<p>You can define new variables in <code>data.table</code> with the <code>:=</code> function.</p>
+<pre class="r"><code># create a new variable called newIris
+iris_dt[, newIris := Petal.Width/Petal.Length]
+head(iris_dt, 3)</code></pre>
+<pre><code>##    Sepal.Length Sepal.Width Petal.Length Petal.Width Species row_id
+## 1:          5.1         3.5          1.4         0.2  setosa      1
+## 2:          4.9         3.0          1.4         0.2  setosa      2
+## 3:          4.7         3.2          1.3         0.2  setosa      3
+##      newIris
+## 1: 0.1428571
+## 2: 0.1428571
+## 3: 0.1538462</code></pre>
+<pre class="r"><code># create a new variable mean_petal_width by species
+iris_dt[, mean_petal_width := mean(Petal.Width), .(Species)]
+head(iris_dt, 3)</code></pre>
+<pre><code>##    Sepal.Length Sepal.Width Petal.Length Petal.Width Species row_id
+## 1:          5.1         3.5          1.4         0.2  setosa      1
+## 2:          4.9         3.0          1.4         0.2  setosa      2
+## 3:          4.7         3.2          1.3         0.2  setosa      3
+##      newIris mean_petal_width
+## 1: 0.1428571            0.246
+## 2: 0.1428571            0.246
+## 3: 0.1538462            0.246</code></pre>
+<p>Or, you can create multiple variables all in one go</p>
+<pre class="r"><code>iris_dt[, `:=` (newIris = Petal.Width/Petal.Length, 
+                row_id = .I)]
+# or
+iris_dt[, c(&quot;newIris&quot;, &quot;row_id&quot;) := list(Petal.Width/Petal.Length, .I)]</code></pre>
+<p>One great benefit of <code>data.table</code> is the ability to sub-assign by reference.</p>
+<pre class="r"><code># create a new variable setosa_dummy which equals 1 for setosa species, NA otherwise
+iris_dt[Species == &quot;setosa&quot;, setosa_dummy := 1]
+# rename setosa to renamed_setosa
+iris_dt[Species == &quot;setosa&quot;, Species := &quot;renamed_setosa&quot;]
+head(iris_dt, 3)</code></pre>
+<pre><code>##    Sepal.Length Sepal.Width Petal.Length Petal.Width        Species row_id
+## 1:          5.1         3.5          1.4         0.2 renamed_setosa      1
+## 2:          4.9         3.0          1.4         0.2 renamed_setosa      2
+## 3:          4.7         3.2          1.3         0.2 renamed_setosa      3
+##      newIris mean_petal_width setosa_dummy
+## 1: 0.1428571            0.246            1
+## 2: 0.1428571            0.246            1
+## 3: 0.1538462            0.246            1</code></pre>
+<p>You can also use <code>:=</code> to remove columns.</p>
+<pre class="r"><code># remove newIris column
+iris_dt[, newIris := NULL]</code></pre>
+<pre class="r"><code># remove mean_petal_width and row_id 
+iris_dt[, c(&quot;mean_petal_width&quot;, &quot;row_id&quot;, &quot;setosa_dummy&quot;) := NULL]
+# or
+cols &lt;- c(&quot;mean_petal_width&quot;, &quot;row_id&quot;, &quot;setosa_dummy&quot;)
+iris_dt[, (cols) := NULL]</code></pre>
+<pre class="r"><code># or 
+iris_dt[, `:=` (mean_petal_width = NULL, row_id = NULL, setosa_dummy = NULL)]
+head(iris_dt, 3)</code></pre>
+<pre><code>##    Sepal.Length Sepal.Width Petal.Length Petal.Width        Species
+## 1:          5.1         3.5          1.4         0.2 renamed_setosa
+## 2:          4.9         3.0          1.4         0.2 renamed_setosa
+## 3:          4.7         3.2          1.3         0.2 renamed_setosa</code></pre>
+</div>
+</div>
+<div id="more-advanced" class="section level1">
+<h1>More Advanced</h1>
+<div id="sd-and-.sdcols" class="section level3">
+<h3><code>.SD</code> and <code>.SDcols</code></h3>
+<p>You can access columns of a <code>data.table</code> using <code>.SD</code> and <code>.SDcols</code> syntax.</p>
+<p>Select all columns in <code>iris_dt</code>:</p>
+<pre class="r"><code>iris_dt[, .SD]</code></pre>
+<pre><code>##      Sepal.Length Sepal.Width Petal.Length Petal.Width        Species
+##   1:          5.1         3.5          1.4         0.2 renamed_setosa
+##   2:          4.9         3.0          1.4         0.2 renamed_setosa
+##   3:          4.7         3.2          1.3         0.2 renamed_setosa
+##   4:          4.6         3.1          1.5         0.2 renamed_setosa
+##   5:          5.0         3.6          1.4         0.2 renamed_setosa
+##  ---                                                                 
+## 146:          6.7         3.0          5.2         2.3      virginica
+## 147:          6.3         2.5          5.0         1.9      virginica
+## 148:          6.5         3.0          5.2         2.0      virginica
+## 149:          6.2         3.4          5.4         2.3      virginica
+## 150:          5.9         3.0          5.1         1.8      virginica</code></pre>
+<p>Select subset of columns by specifying columns in <code>.SDcols</code>:</p>
+<pre class="r"><code>iris_dt[, .SD, .SDcols = c(&quot;Species&quot;, &quot;Sepal.Width&quot;, &quot;Sepal.Length&quot;)]</code></pre>
+<pre><code>##             Species Sepal.Width Sepal.Length
+##   1: renamed_setosa         3.5          5.1
+##   2: renamed_setosa         3.0          4.9
+##   3: renamed_setosa         3.2          4.7
+##   4: renamed_setosa         3.1          4.6
+##   5: renamed_setosa         3.6          5.0
+##  ---                                        
+## 146:      virginica         3.0          6.7
+## 147:      virginica         2.5          6.3
+## 148:      virginica         3.0          6.5
+## 149:      virginica         3.4          6.2
+## 150:      virginica         3.0          5.9</code></pre>
+<pre class="r"><code># or 
+iris_dt[, .SD, .SDcols = c(5,1,2)]</code></pre>
+<pre><code>##             Species Sepal.Length Sepal.Width
+##   1: renamed_setosa          5.1         3.5
+##   2: renamed_setosa          4.9         3.0
+##   3: renamed_setosa          4.7         3.2
+##   4: renamed_setosa          4.6         3.1
+##   5: renamed_setosa          5.0         3.6
+##  ---                                        
+## 146:      virginica          6.7         3.0
+## 147:      virginica          6.3         2.5
+## 148:      virginica          6.5         3.0
+## 149:      virginica          6.2         3.4
+## 150:      virginica          5.9         3.0</code></pre>
+<p>Round up all numeric columns to integer:</p>
+<pre class="r"><code>iris_dt[, lapply(.SD, round), .SDcols = 1:4]</code></pre>
+<pre><code>##      Sepal.Length Sepal.Width Petal.Length Petal.Width
+##   1:            5           4            1           0
+##   2:            5           3            1           0
+##   3:            5           3            1           0
+##   4:            5           3            2           0
+##   5:            5           4            1           0
+##  ---                                                  
+## 146:            7           3            5           2
+## 147:            6           2            5           2
+## 148:            6           3            5           2
+## 149:            6           3            5           2
+## 150:            6           3            5           2</code></pre>
+<pre class="r"><code># assign them to the original columns
+cols &lt;- 1:4 # or cols &lt;- c(&quot;Sepal.Length&quot;, &quot;Sepal.Width&quot;, &quot;Petal.Length&quot;, &quot;Petal.Width&quot;)
+iris_dt[, (cols) := lapply(.SD, round), .SDcols = cols]
+head(iris_dt, 3)</code></pre>
+<pre><code>##    Sepal.Length Sepal.Width Petal.Length Petal.Width        Species
+## 1:            5           4            1           0 renamed_setosa
+## 2:            5           3            1           0 renamed_setosa
+## 3:            5           3            1           0 renamed_setosa</code></pre>
+<p>Calculate mean by Species:</p>
+<pre class="r"><code>iris_dt &lt;- as.data.table(iris)
+# mean of all columns by Species
+iris_dt[, lapply(.SD, mean), by = Species]</code></pre>
+<pre><code>##       Species Sepal.Length Sepal.Width Petal.Length Petal.Width
+## 1:     setosa        5.006       3.428        1.462       0.246
+## 2: versicolor        5.936       2.770        4.260       1.326
+## 3:  virginica        6.588       2.974        5.552       2.026</code></pre>
+<pre class="r"><code># or if we only want to calculate mean of Sepal columns by Species
+iris_dt[, lapply(.SD, mean), by = Species, .SDcols = c(&quot;Sepal.Length&quot;, &quot;Sepal.Width&quot;)]</code></pre>
+<pre><code>##       Species Sepal.Length Sepal.Width
+## 1:     setosa        5.006       3.428
+## 2: versicolor        5.936       2.770
+## 3:  virginica        6.588       2.974</code></pre>
+<p>Select first and last rows:</p>
+<pre class="r"><code>iris_dt[, .SD[c(1, .N)]]</code></pre>
+<pre><code>##    Sepal.Length Sepal.Width Petal.Length Petal.Width   Species
+## 1:          5.1         3.5          1.4         0.2    setosa
+## 2:          5.9         3.0          5.1         1.8 virginica</code></pre>
+<pre class="r"><code># by Species
+iris_dt[, .SD[c(1, .N)], by = Species]</code></pre>
+<pre><code>##       Species Sepal.Length Sepal.Width Petal.Length Petal.Width
+## 1:     setosa          5.1         3.5          1.4         0.2
+## 2:     setosa          5.0         3.3          1.4         0.2
+## 3: versicolor          7.0         3.2          4.7         1.4
+## 4: versicolor          5.7         2.8          4.1         1.3
+## 5:  virginica          6.3         3.3          6.0         2.5
+## 6:  virginica          5.9         3.0          5.1         1.8</code></pre>
+</div>
+<div id="chaining" class="section level3">
+<h3>Chaining</h3>
+<p>Chaining in <code>data.table</code> refers to using multiple <code>[]</code> in one command.</p>
+<p>Calculate mean <code>Sepal.Length</code> by Species, order by the calculated mean, and only keep rows with mean less than 6:</p>
+<pre class="r"><code>iris_dt[, .(mean_sepal_length = mean(Sepal.Length)), by = Species][order(mean_sepal_length)][mean_sepal_length &lt; 6]</code></pre>
+<pre><code>##       Species mean_sepal_length
+## 1:     setosa             5.006
+## 2: versicolor             5.936</code></pre>
+</div>
+<div id="suppressing-intermediate-output-with" class="section level3">
+<h3>Suppressing Intermediate Output with <code>{}</code></h3>
+<p>Create a new variable <code>sepal_length_diff</code> as the difference from mean value:</p>
+<pre class="r"><code>iris_dt[, sepal_length_diff := {
+  mean_sepal_length = mean(Sepal.Length)
+  diff_from_avg = Sepal.Length - mean_sepal_length
+  round(diff_from_avg, 1)
+}]
+# equi: iris_dt[, sepal_length_diff := {mean_sepal_length = mean(Sepal.Length); diff_from_avg = Sepal.Length - mean_sepal_length; round(diff_from_avg, 1)}]
+head(iris_dt, 3)</code></pre>
+<pre><code>##    Sepal.Length Sepal.Width Petal.Length Petal.Width Species
+## 1:          5.1         3.5          1.4         0.2  setosa
+## 2:          4.9         3.0          1.4         0.2  setosa
+## 3:          4.7         3.2          1.3         0.2  setosa
+##    sepal_length_diff
+## 1:              -0.7
+## 2:              -0.9
+## 3:              -1.1</code></pre>
+<pre class="r"><code># sanity check
+round(iris_dt[1, Sepal.Length] - iris_dt[, mean(Sepal.Length)], 1) == iris_dt[1, sepal_length_diff]</code></pre>
+<pre><code>## [1] TRUE</code></pre>
+</div>
+<div id="rolling-joins" class="section level3">
+<h3>Rolling Joins</h3>
+<p>Let’s <strong>roll forward</strong> (last observation carried forward):</p>
+<pre class="r"><code>dt1 &lt;- data.table(x = c(&quot;a&quot;, &quot;b&quot;, &quot;c&quot;, &quot;d&quot;), dt1_y = c(11.9, 21.4, 5.7, 18))
+dt2 &lt;- data.table(dt2_y = c(10, 15, 20), z = c(&quot;one&quot;, &quot;two&quot;, &quot;three&quot;))
+# add row ids and duplicate y  
+dt1[, `:=` (dt1_row_id = .I, joint_y = dt1_y)]
+dt2[, `:=` (dt2_row_id = .I, joint_y = dt2_y)]
+
+dt1</code></pre>
+<pre><code>##    x dt1_y dt1_row_id joint_y
+## 1: a  11.9          1    11.9
+## 2: b  21.4          2    21.4
+## 3: c   5.7          3     5.7
+## 4: d  18.0          4    18.0</code></pre>
+<pre class="r"><code>dt2</code></pre>
+<pre><code>##    dt2_y     z dt2_row_id joint_y
+## 1:    10   one          1      10
+## 2:    15   two          2      15
+## 3:    20 three          3      20</code></pre>
+<pre class="r"><code>dt2[dt1, on = .(joint_y), roll = T] # equi: dt2[dt1, on = .(joint_y), roll = Inf]</code></pre>
+<pre><code>##    dt2_y     z dt2_row_id joint_y x dt1_y dt1_row_id
+## 1:    10   one          1    11.9 a  11.9          1
+## 2:    20 three          3    21.4 b  21.4          2
+## 3:    NA  &lt;NA&gt;         NA     5.7 c   5.7          3
+## 4:    15   two          2    18.0 d  18.0          4</code></pre>
+<p>This means that for each <code>dt1_y</code>, find <code>dt2_y</code> that is closest to <code>dt1_y</code> with the condition <code>dt1_y &gt;= dt2_y</code>. This condition is the forward part of the rolling join.</p>
+<p>Now, let’s <strong>roll backward</strong> (next observation carried backward):</p>
+<pre class="r"><code>dt2[dt1, on = .(joint_y), roll = -Inf]</code></pre>
+<pre><code>##    dt2_y     z dt2_row_id joint_y x dt1_y dt1_row_id
+## 1:    15   two          2    11.9 a  11.9          1
+## 2:    NA  &lt;NA&gt;         NA    21.4 b  21.4          2
+## 3:    10   one          1     5.7 c   5.7          3
+## 4:    20 three          3    18.0 d  18.0          4</code></pre>
+<p>Now the condition is reverse, i.e. <code>dt1_y &lt;= dt2_y</code>. Pay attention to the minus sign in the <code>-Inf</code>; it is how you tell <code>data.table</code> to roll backward instead of forward.</p>
+<p>Next, let’s give them a window to roll on:</p>
+<pre class="r"><code>dt2[dt1, on = .(joint_y), roll = -2]</code></pre>
+<pre><code>##    dt2_y     z dt2_row_id joint_y x dt1_y dt1_row_id
+## 1:    NA  &lt;NA&gt;         NA    11.9 a  11.9          1
+## 2:    NA  &lt;NA&gt;         NA    21.4 b  21.4          2
+## 3:    NA  &lt;NA&gt;         NA     5.7 c   5.7          3
+## 4:    20 three          3    18.0 d  18.0          4</code></pre>
+<p>Now the condition is restricted to only match if <code>dt1_y &lt;= dt2_y - 2</code>.</p>
+<pre class="r"><code>dt2[dt1, on = .(joint_y), roll = 2]</code></pre>
+<pre><code>##    dt2_y     z dt2_row_id joint_y x dt1_y dt1_row_id
+## 1:    10   one          1    11.9 a  11.9          1
+## 2:    20 three          3    21.4 b  21.4          2
+## 3:    NA  &lt;NA&gt;         NA     5.7 c   5.7          3
+## 4:    NA  &lt;NA&gt;         NA    18.0 d  18.0          4</code></pre>
+<p>The condition here is <code>dt1_y &lt;= dt2_y + 2</code>.</p>
+<p>If you would like to roll both way to the nearest value instead, you can use <code>roll = &quot;nearest&quot;</code>.</p>
+<pre class="r"><code>dt2[dt1, on = .(joint_y), roll = &quot;nearest&quot;]</code></pre>
+<pre><code>##    dt2_y     z dt2_row_id joint_y x dt1_y dt1_row_id
+## 1:    10   one          1    11.9 a  11.9          1
+## 2:    20 three          3    21.4 b  21.4          2
+## 3:    10   one          1     5.7 c   5.7          3
+## 4:    20 three          3    18.0 d  18.0          4</code></pre>
+<p>Another cool feature in <code>data.table</code> is the <code>foverlaps()</code> function which allows you to join tables based on range of values. Let’s look at a couple examples.</p>
+<pre class="r"><code># each window does not have to be equal
+dt3 &lt;- data.table(min_y = c(0, 10, 15, 20), max_y = c(10, 15, 20, 30))
+setkey(dt3, min_y, max_y)
+# add a new column to dt1 and drop joint_y and dt1_row_id
+dt1[, `:=` (dt1_y_end = c(13, 25, 10, 22), joint_y = NULL, dt1_row_id = NULL)]
+setkey(dt1, dt1_y, dt1_y_end)
+foverlaps(dt1, dt3, type = &quot;any&quot;)</code></pre>
+<pre><code>##    min_y max_y x dt1_y dt1_y_end
+## 1:     0    10 c   5.7        10
+## 2:    10    15 c   5.7        10
+## 3:    10    15 a  11.9        13
+## 4:    15    20 d  18.0        22
+## 5:    20    30 d  18.0        22
+## 6:    20    30 b  21.4        25</code></pre>
+<p>When specifying <code>type = &quot;any&quot;</code>, as long as <code>[dt1_y, dt1_y_end]</code> and <code>[min_y, max_y]</code> ranges overlap it will give a match.</p>
+<pre class="r"><code>foverlaps(dt1, dt3, type = &quot;within&quot;)</code></pre>
+<pre><code>##    min_y max_y x dt1_y dt1_y_end
+## 1:     0    10 c   5.7        10
+## 2:    10    15 a  11.9        13
+## 3:    NA    NA d  18.0        22
+## 4:    20    30 b  21.4        25</code></pre>
+<p>When specifying <code>type = &quot;within&quot;</code>, the only matches returned are those where <code>[dt1_y, dt1_y_end]</code> range is <strong>within</strong> <code>[min_y, max_y]</code>.</p>
+</div>
+</div>
+<div id="so-why-should-you-use-data.table" class="section level1">
+<h1>So, why should you use <code>data.table</code>?</h1>
+<ul>
+<li>concise and consistent syntax
+<ul>
+<li><code>DT[i, j, by]</code></li>
+</ul></li>
+<li>speed
+<ul>
+<li>faster than base R and <code>dplyr</code></li>
+</ul></li>
+<li>efficient memory usage
+<ul>
+<li>sub-assign by reference: <code>DT[x &lt; 0, y := NA]</code></li>
+<li>aggregate while joining: <code>DT1[DT2, list(z=sum(z)), by = .EACHI]</code> (equivalent to <code>DT1[, .(z=sum(z)), keyby=.(x,y)][DT2]</code>)</li>
+</ul></li>
+<li>features
+<ul>
+<li><code>fread</code>, <code>fwrite</code>, automatic indexing, rolling joins, <code>foverlaps</code>, etc.</li>
+</ul></li>
+</ul>
+<p>More detail, <a href="https://stackoverflow.com/questions/21435339/data-table-vs-dplyr-can-one-do-something-well-the-other-cant-or-does-poorly">here</a>.</p>
+</div>
+<div id="references" class="section level1">
+<h1>References</h1>
+<ol style="list-style-type: decimal">
+<li>Matt Dowle and Arun Srinivasan (2018). <code>data.table</code>: Extension of <code>data.frame</code>. R package version 1.11.4. <a href="https://CRAN.R-project.org/package=data.table" class="uri">https://CRAN.R-project.org/package=data.table</a></li>
+<li><a href="https://github.com/Rdatatable/data.table/wiki" class="uri">https://github.com/Rdatatable/data.table/wiki</a></li>
+<li><code>data.table</code> vs. <code>dplyr</code>. <a href="https://stackoverflow.com/questions/21435339/data-table-vs-dplyr-can-one-do-something-well-the-other-cant-or-does-poorly" class="uri">https://stackoverflow.com/questions/21435339/data-table-vs-dplyr-can-one-do-something-well-the-other-cant-or-does-poorly</a></li>
+<li>Advaned tips and tricks with <code>data.table</code>. <a href="http://brooksandrew.github.io/simpleblog/articles/advanced-data-table/" class="uri">http://brooksandrew.github.io/simpleblog/articles/advanced-data-table/</a></li>
+<li><code>data.table</code> cheat sheet. <a href="https://s3.amazonaws.com/assets.datacamp.com/img/blog/data+table+cheat+sheet.pdf" class="uri">https://s3.amazonaws.com/assets.datacamp.com/img/blog/data+table+cheat+sheet.pdf</a></li>
+<li>Purpose of setting a key in <code>data.table</code>. <a href="https://stackoverflow.com/questions/20039335/what-is-the-purpose-of-setting-a-key-in-data-table" class="uri">https://stackoverflow.com/questions/20039335/what-is-the-purpose-of-setting-a-key-in-data-table</a></li>
+<li><code>.EACHI</code> in <code>data.table</code>. <a href="https://stackoverflow.com/questions/27004002/eachi-in-data-table/27004566#27004566" class="uri">https://stackoverflow.com/questions/27004002/eachi-in-data-table/27004566#27004566</a></li>
+<li>Understand <code>data.table</code> rolling joins. <a href="https://www.r-bloggers.com/understanding-data-table-rolling-joins/" class="uri">https://www.r-bloggers.com/understanding-data-table-rolling-joins/</a></li>
+</ol>
+</div>

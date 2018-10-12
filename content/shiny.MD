@@ -1,5 +1,5 @@
 ---
-title: "Shiny Apps authored by Kim Eng Ky"
+title: "Shiny Apps authored by Kim"
 author: "Kim Eng Ky"
 date: 2018-09-22
 ---
