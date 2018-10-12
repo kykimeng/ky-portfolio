@@ -38,20 +38,20 @@ disqusShortname = "ky-portfolio"
 
 ## Main Menu
 [[menu.main]]
-    name = "Posts"
-    weight = 100
-    identifier = "posts"
-    url = "/posts/"
+    name = "About Me"
+    identifier = "about"
+    weight = 10
+    url = "/about/"
 [[menu.main]]
     name = "Shiny Apps"
-    weight = 100
+    weight = 30
     identifier = "shiny"
     url = "/shiny/"
 [[menu.main]]
-    name = "About"
-    identifier = "about"
-    weight = 300
-    url = "/about/"
+    name = "Blog Posts"
+    weight = 20
+    identifier = "posts"
+    url = "/posts/"
 [[menu.main]]
     name = "Resume"
     identifier = "resume"
