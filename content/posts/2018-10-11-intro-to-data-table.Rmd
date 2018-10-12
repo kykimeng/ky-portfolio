@@ -19,7 +19,7 @@ library(data.table)
 library(ggplot2)
 ```
 
-This week, I had the opportunity to present R `data.table` package to R Ladies Twin Cities meetup. With the help of another R Lady, **Haema Nilakanta**, we put together this tutorial on the package.
+This week, I had the opportunity to present R `data.table` package to R Ladies Twin Cities meetup. With the help of another R Lady, **Haema Nilakanta**, we put together this tutorial on the package. This document was originally published on RPubs [here](http://rpubs.com/kykimeng/intro-to-data-table).
 
 This document is by no means exhaustive. However, it is a good start for those who would like to get introduced to `data.table`. 
 
