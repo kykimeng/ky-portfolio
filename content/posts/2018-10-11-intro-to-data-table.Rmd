@@ -10,7 +10,9 @@ tags:
   - data.table
   - data manipulation
 summary: 
-output: blogdown::html_page
+output:
+  blogdown::html_page:
+    number_sections: true
 ---
 
 ```{r setup, include=FALSE}
