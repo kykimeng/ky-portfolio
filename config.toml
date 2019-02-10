@@ -48,6 +48,11 @@ disqusShortname = "ky-portfolio"
     identifier = "shiny"
     url = "/shiny/"
 [[menu.main]]
+    name = "Papers"
+    weight = 40
+    identifier = "papers"
+    url = "/papers/"
+[[menu.main]]
     name = "Blog Posts"
     weight = 20
     identifier = "posts"
