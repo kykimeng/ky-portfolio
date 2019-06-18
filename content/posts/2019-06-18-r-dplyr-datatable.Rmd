@@ -1,0 +1,47 @@
+---
+title: Base R vs. dplyr vs. data.table
+author: Kim Eng KY
+date: '2019-06-18'
+slug: r-dplyr-datatable
+categories: 
+  - R Package
+  - Data Wrangling
+tags:
+  - R
+  - dplyr
+  - data.table
+  - data manipulation
+summary: 
+output:
+  blogdown::html_page:
+    toc: true
+---
+
+ 
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, eval = FALSE)
+library(data.table)
+library(ggplot2)
+```
+
+# Introduction
+
+# Basic Operations
+## Filter rows
+## Sort rows
+## Select columns
+
+
+<table class="table table-condensed"><tbody><tr><td align="left">
+```{r}
+print(1)
+```
+</td><td align="left">
+```{r}
+print(2)
+```
+</td><td align="left">
+```{r}
+print(2)
+```
+</td></tr></tbody></table>
