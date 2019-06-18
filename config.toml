@@ -6,7 +6,9 @@ title = "Kim Eng KY"
 theme = "hyde-hyde"
     
 ## Hugo Built-in Features
+ignoreFiles = ["\\.Rmd$", "\\.Rmarkdown$", "_files$", "_cache$"]
 disqusShortname = "ky-portfolio"
+relativeURLs = true
 # googleAnalytics = "your-google-analytics-id"
 # enableRobotsTXT = true
 
@@ -20,7 +22,6 @@ disqusShortname = "ky-portfolio"
     dateformat = "Jan 2, 2006"
     highlightjs = true
     highlightjsstyle = "github"
-    ignoreFiles = ["_files$", "_cache$"]
     math = true
     copyright = "&copy; 2018. All rights reserved."
 
