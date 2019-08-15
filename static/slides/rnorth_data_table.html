@@ -138,9 +138,19 @@ Calculate mean Ozone value:
 ```r
 # data.frame
 mean(airquality$Ozone, na.rm = T)
+```
 
+```
+## [1] 42.12931
+```
+
+```r
 # data.table
 airquality_dt[, mean(Ozone, na.rm = T)]
+```
+
+```
+## [1] 42.12931
 ```
 
 ---
@@ -152,10 +162,22 @@ Calculate mean Ozone value by Month
 # data.frame 
 aggregate(Ozone ~ Month, airquality, 
           mean, na.rm = T)
+```
 
+
+```r
 # data.table
 airquality_dt[, mean(Ozone, na.rm = T), 
               by = Month]
+```
+
+```
+##    Month       V1
+## 1:     5 23.61538
+## 2:     6 29.44444
+## 3:     7 59.11538
+## 4:     8 59.96154
+## 5:     9 31.44828
 ```
 
 ---
@@ -168,11 +190,23 @@ Calculate mean Ozone value when Temp is above 70 by Month
 aggregate(Ozone ~ Month, 
           airquality[airquality$Temp &gt; 70,], 
           mean, na.rm = T)
+```
 
+
+```r
 # data.table
 airquality_dt[Temp &gt; 70, 
               mean(Ozone, na.rm = T), 
               by = Month]
+```
+
+```
+##    Month       V1
+## 1:     5 37.57143
+## 2:     6 30.62500
+## 3:     7 59.11538
+## 4:     8 59.96154
+## 5:     9 35.72727
 ```
 
 ---
@@ -190,8 +224,6 @@ airquality_dt[, mean(Ozone, na.rm = T),
 ## 1: FALSE 18.40741
 ## 2:  TRUE 49.32584
 ```
-
----
 
 Names output columns to be more meaningful:
 
@@ -222,9 +254,6 @@ airquality_dt[, .N]
 ## [1] 153
 ```
 
-
----
-
 Or we can calculate number of rows by month:
 
 
@@ -254,9 +283,6 @@ airquality_dt[, uniqueN(Month)]
 ```
 ## [1] 5
 ```
-
-
----
 
 Or we can calculate number of days in each month.
 
@@ -418,10 +444,24 @@ Subset `airquality` based on values in `filter_vals`.
 # Month/Day pair in filter_vals
 airquality_dt[filter_vals, 
               on = .(Month, Day)]
+```
+
+
+```r
 # or 
 setkey(airquality_dt, Month, Day)
 setkey(filter_vals, Month, Day)
 airquality_dt[filter_vals]
+```
+
+```
+##    Ozone Solar.R Wind Temp Month Day
+## 1:    41     190  7.4   67     5   1
+## 2:    36     118  8.0   72     5   2
+## 3:    12     149 12.6   74     5   3
+## 4:    NA     286  8.6   78     6   1
+## 5:    NA     287  9.7   74     6   2
+## 6:    NA     242 16.1   67     6   3
 ```
 
 ---
@@ -432,8 +472,27 @@ What if we want to exclude rows that match the Month/Day pair in `filter_vals`?
 ```r
 airquality_dt[!filter_vals, 
               on = .(Month, Day)]
+```
+
+
+```r
 # or after setting keys:
 airquality_dt[!filter_vals]
+```
+
+```
+##      Ozone Solar.R Wind Temp Month Day
+##   1:    18     313 11.5   62     5   4
+##   2:    NA      NA 14.3   56     5   5
+##   3:    28      NA 14.9   66     5   6
+##   4:    23     299  8.6   65     5   7
+##   5:    19      99 13.8   59     5   8
+##  ---                                  
+## 143:    30     193  6.9   70     9  26
+## 144:    NA     145 13.2   77     9  27
+## 145:    14     191 14.3   75     9  28
+## 146:    18     131  8.0   76     9  29
+## 147:    20     223 11.5   68     9  30
 ```
 
 
@@ -586,12 +645,8 @@ head(airquality_dt[
 ## 3:     5   3
 ```
 
----
-
-Or, use column indices.
-
-
 ```r
+# Or, use column indices.
 head(airquality_dt[
   , .SD, .SDcols = c(5, 6)
 ], 3)
@@ -613,8 +668,6 @@ Round up `Ozone`, `Solar.R` and `Wind` variables.
 airquality_dt[, lapply(.SD, round), 
               .SDcols = c('Ozone', 'Solar.R', 'Wind')]
 ```
-
----
 
 We can overwrite them into the original variables.
 
@@ -819,6 +872,8 @@ Now the condition is restricted to only match if `dt1_y &lt;= dt2_y - 2`.
 
 ---
 
+Or, we can roll with window in the other direction.
+
 
 ```r
 dt2[dt1, on = .(joint_y), roll = 2]
@@ -859,23 +914,46 @@ Each window does not have to be equal.
 
 
 ```r
-dt3 &lt;- data.table(
+(dt3 &lt;- data.table(
   min_y = c(0, 10, 15, 20), 
-  max_y = c(10, 15, 20, 30)
-)
-setkey(dt3, min_y, max_y)
+  max_y = c(10, 15, 20, 30),
+  key = c('min_y', 'max_y')
+))
+```
+
+```
+##    min_y max_y
+## 1:     0    10
+## 2:    10    15
+## 3:    15    20
+## 4:    20    30
 ```
 
 ---
 
 
 ```r
-dt4 &lt;- data.table(
+(dt4 &lt;- data.table(
   x = c('a', 'b', 'c', 'd'),
   dt4_y = c(11.9, 21.4, 5.7, 18),
-  dt4_y_end = c(13, 25, 10, 22)
-)
-setkey(dt4, dt4_y, dt4_y_end)
+  dt4_y_end = c(13, 25, 10, 22), 
+  key = c('dt4_y', 'dt4_y_end')
+))
+```
+
+```
+##    x dt4_y dt4_y_end
+## 1: c   5.7        10
+## 2: a  11.9        13
+## 3: d  18.0        22
+## 4: b  21.4        25
+```
+
+
+---
+
+
+```r
 foverlaps(dt4, dt3, type = "any")
 ```
 
@@ -889,7 +967,7 @@ foverlaps(dt4, dt3, type = "any")
 ## 6:    20    30 b  21.4        25
 ```
 
-When specifying `type = "any"`, as long as `[dt1_y, dt1_y_end]` and `[min_y, max_y]` ranges overlap it will give a match.
+When specifying `type = "any"`, as long as `[dt4_y, dt4_y_end]` and `[min_y, max_y]` ranges overlap it will give a match.
 
 ---
 
