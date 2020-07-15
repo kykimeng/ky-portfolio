@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+<html lang="" xml:lang="">
+  <head>
+    <title>dplyr + data.table = dtplyr?</title>
+    <meta charset="utf-8" />
+    <meta name="author" content="Kim Eng Ky" />
+    <meta name="date" content="2020-07-15" />
+    <link rel="stylesheet" href="xaringan-themer.css" type="text/css" />
+  </head>
+  <body>
+    <textarea id="source">
+class: center, middle, inverse, title-slide
+
+# dplyr + data.table = dtplyr?
+## (kykimeng.com)
+### Kim Eng Ky
+### July 15, 2020
+
+---
+
+
+
+
+# About me 
+
+.pull-left[
+![Kim and Momo](Kim.jpg)
+]
+
+.pull-right[
+- she/her/hers
+- a Cambodian
+- a Data Scientist
+- B.A. from Macalester, current M.S. in statistics candidate at UMN
+
+- \#RLadies, \#WiMLDS, \#MinneWiADS, \#noRth
+]
+
+
+---
+
+# `dplyr`
+
+.left-column[ 
+![dplyr](dplyr.png)
+![hadley](hadley.jpg)
+]
+
+.right-column[ 
+- developed by Hadley Wickham of RStudio + many other contributors
+
+- "a grammar of data manipulation, providing a consistent set of verbs that help you solve the most common data manipulation challenges"
+
+- part of the `tidyverse`
+]
+
+
+
+---
+
+# `dplyr` Verbs 
+
+- **`mutate()`** adds new variables that are functions of existing variables
+- **`select()`** picks variables based on their names
+- **`filter()`** picks cases based on their values
+- **`summarise()`** reduces multiple values down to a single summary
+- **`arrange()`** changes the ordering of the rows
+- **`group_by()`** performs operations by group
+
+
+
+&lt;img src="dplyr.png" width="20%" style="display: block; margin: auto;" /&gt;
+
+---
+
+# Example:
+
+
+```r
+library(dplyr)
+
+starwars %&gt;%
+  group_by(species) %&gt;%
+  summarise(n = n(),
+            mass = mean(mass, na.rm = TRUE)) %&gt;%
+  filter(n &gt; 1,
+         mass &gt; 80)
+```
+
+```
+## # A tibble: 3 x 3
+##   species      n  mass
+##   &lt;chr&gt;    &lt;int&gt; &lt;dbl&gt;
+## 1 Human       35  82.8
+## 2 Kaminoan     2  88  
+## 3 Wookiee      2 124
+```
+
+
+---
+
+# Why `dplyr`?
+
+.left-column[ 
+![dplyr](dplyr.png)
+]
+
+.right-column[ 
+- faster than base R
+
+- simple/readable syntax
+
+- function chaining 
+
+- direct connection to and analysis within external databases
+]
+
+
+---
+
+# `data.table`
+
+"`data.table` is an R package that provides an enhanced version of `data.frames`." 
+
+
+.left-column[
+![data.table](datatable.png)
+![mattdowle](mattdowle.png)
+]
+
+.right-column[
+
+- concise syntax: fast to type, fast to read
+
+- fast speed
+
+- memory efficient
+
+- feature rich (e.g. `fread()`\\`fwrite()`, rolling joins, etc)
+]
+
+
+
+---
+
+![data.table syntax](data_table_syntax.png)
+
+
+---
+
+# Example
+
+
+```r
+library(data.table)
+
+starwars_dt &lt;- as.data.table(starwars)
+starwars_dt[, .(n = .N, 
+                mass = mean(mass, na.rm = TRUE)),
+              by = .(species)][n &gt; 1 &amp; mass &gt; 80]
+```
+
+```
+##     species  n      mass
+## 1:    Human 35  82.78182
+## 2:  Wookiee  2 124.00000
+## 3: Kaminoan  2  88.00000
+```
+
+---
+
+# What is `dtplyr`?
+
+.left-column[
+![rstudio](RStudio.png)
+]
+
+.right-column[
+- "`dtplyr` provides a `data.table` backend for `dplyr`."
+
+- Authored by Lionel Henry and maintained by Hadley Wickham of RStudio
+
+- Same syntax as `dplyr` with the speed of `data.table`
+]
+
+
+---
+
+# Working with `dtplyr`
+
+
+```r
+library(dtplyr)
+
+# allow copying when mutate() is called
+starwars_lazy &lt;- lazy_dt(starwars)
+
+# allow modify in place; no copy needed 
+# only works if already a data.table object
+starwars_lazy_dt &lt;- lazy_dt(starwars_dt, immutable = FALSE)
+```
+
+`lazy_dt()` object does not evaluate until `as_data_frame()`, `as_tibble()` or `as.data.table()` is called
+
+---
+
+
+# Example
+
+
+```r
+starwars_lazy %&gt;% 
+  group_by(species) %&gt;%
+  summarise(n = n(), mass = mean(mass, na.rm = TRUE)) %&gt;%
+  filter(n &gt; 1, mass &gt; 80) %&gt;% as_tibble()
+```
+
+```
+## # A tibble: 3 x 3
+##   species      n  mass
+##   &lt;chr&gt;    &lt;int&gt; &lt;dbl&gt;
+## 1 Human       35  82.8
+## 2 Kaminoan     2  88  
+## 3 Wookiee      2 124
+```
+
+
+---
+
+
+# Speed Test
+
+
+
+```r
+library(microbenchmark)
+
+microbenchmark(
+  "dplyr" = starwars %&gt;% group_by(species) %&gt;%
+    summarise(n = n(), mass = mean(mass, na.rm = TRUE)) %&gt;%
+    filter(n &gt; 1, mass &gt; 80),
+  "data.table" = starwars_dt[, .(n = .N, 
+                                 mass = mean(mass, na.rm = TRUE)),
+                             by = .(species)][n &gt; 1 &amp; mass &gt; 80],
+  "dtplyr" = starwars_lazy %&gt;% group_by(species) %&gt;%
+    summarise(n = n(), mass = mean(mass, na.rm = TRUE)) %&gt;%
+    filter(n &gt; 1, mass &gt; 80) %&gt;% as_tibble(),
+  "dtplyr - 2" = starwars_lazy_dt %&gt;% group_by(species) %&gt;%
+    summarise(n = n(), mass = mean(mass, na.rm = TRUE)) %&gt;%
+    filter(n &gt; 1, mass &gt; 80) %&gt;% as.data.table()
+)
+```
+
+```
+## Unit: microseconds
+##        expr      min        lq     mean   median        uq       max neval
+##       dplyr 6761.786 7704.7200 9633.105 9117.215 11296.529 16104.843   100
+##  data.table  798.936  897.4755 1345.340 1066.030  1275.006 10087.927   100
+##      dtplyr 2877.296 3117.7610 4185.912 3465.326  4465.350 12291.630   100
+##  dtplyr - 2 2670.015 2823.5115 3569.992 3009.274  3839.037  9273.707   100
+```
+
+
+---
+
+# Why is `dtplyr` slower than `data.table`?
+
+- time it takes to translate `dplyr` syntax to `data.table`; negligible for large datasets
+
+- some `data.table` expressions have no direct `dplyr` equivalent (e.g. rolling join)
+
+- `mutate()` makes a copy before modifying while `data.table` does not and `data.table` sub-assigns by reference
+
+---
+
+# Resources
+
+- https://dtplyr.tidyverse.org/
+- https://dplyr.tidyverse.org/
+- http://zevross.com/blog/2014/03/26/four-reasons-why-you-should-check-out-the-r-package-dplyr-3/
+- https://kykimeng.com/posts/intro-to-data-table/
+- https://rdatatable.gitlab.io/data.table/
+- https://towardsdatascience.com/introduction-to-dtplyr-783d89e9ae56
+    </textarea>
+<style data-target="print-only">@media screen {.remark-slide-container{display:block;}.remark-slide-scaler{box-shadow:none;}}</style>
+<script src="https://remarkjs.com/downloads/remark-latest.min.js"></script>
+<script>var slideshow = remark.create({
+"highlightStyle": "github",
+"highlightLines": true,
+"countIncrementalSlides": false
+});
+if (window.HTMLWidgets) slideshow.on('afterShowSlide', function (slide) {
+  window.dispatchEvent(new Event('resize'));
+});
+(function(d) {
+  var s = d.createElement("style"), r = d.querySelector(".remark-slide-scaler");
+  if (!r) return;
+  s.type = "text/css"; s.innerHTML = "@page {size: " + r.style.width + " " + r.style.height +"; }";
+  d.head.appendChild(s);
+})(document);
+
+(function(d) {
+  var el = d.getElementsByClassName("remark-slides-area");
+  if (!el) return;
+  var slide, slides = slideshow.getSlides(), els = el[0].children;
+  for (var i = 1; i < slides.length; i++) {
+    slide = slides[i];
+    if (slide.properties.continued === "true" || slide.properties.count === "false") {
+      els[i - 1].className += ' has-continuation';
+    }
+  }
+  var s = d.createElement("style");
+  s.type = "text/css"; s.innerHTML = "@media print { .has-continuation { display: none; } }";
+  d.head.appendChild(s);
+})(document);
+// delete the temporary CSS (for displaying all slides initially) when the user
+// starts to view slides
+(function() {
+  var deleted = false;
+  slideshow.on('beforeShowSlide', function(slide) {
+    if (deleted) return;
+    var sheets = document.styleSheets, node;
+    for (var i = 0; i < sheets.length; i++) {
+      node = sheets[i].ownerNode;
+      if (node.dataset["target"] !== "print-only") continue;
+      node.parentNode.removeChild(node);
+    }
+    deleted = true;
+  });
+})();
+(function() {
+  "use strict"
+  // Replace <script> tags in slides area to make them executable
+  var scripts = document.querySelectorAll(
+    '.remark-slides-area .remark-slide-container script'
+  );
+  if (!scripts.length) return;
+  for (var i = 0; i < scripts.length; i++) {
+    var s = document.createElement('script');
+    var code = document.createTextNode(scripts[i].textContent);
+    s.appendChild(code);
+    var scriptAttrs = scripts[i].attributes;
+    for (var j = 0; j < scriptAttrs.length; j++) {
+      s.setAttribute(scriptAttrs[j].name, scriptAttrs[j].value);
+    }
+    scripts[i].parentElement.replaceChild(s, scripts[i]);
+  }
+})();
+(function() {
+  var links = document.getElementsByTagName('a');
+  for (var i = 0; i < links.length; i++) {
+    if (/^(https?:)?\/\//.test(links[i].getAttribute('href'))) {
+      links[i].target = '_blank';
+    }
+  }
+})();
+// adds .remark-code-has-line-highlighted class to <pre> parent elements
+// of code chunks containing highlighted lines with class .remark-code-line-highlighted
+(function(d) {
+  const hlines = d.querySelectorAll('.remark-code-line-highlighted');
+  const preParents = [];
+  const findPreParent = function(line, p = 0) {
+    if (p > 1) return null; // traverse up no further than grandparent
+    const el = line.parentElement;
+    return el.tagName === "PRE" ? el : findPreParent(el, ++p);
+  };
+
+  for (let line of hlines) {
+    let pre = findPreParent(line);
+    if (pre && !preParents.includes(pre)) preParents.push(pre);
+  }
+  preParents.forEach(p => p.classList.add("remark-code-has-line-highlighted"));
+})(document);</script>
+
+<script>
+slideshow._releaseMath = function(el) {
+  var i, text, code, codes = el.getElementsByTagName('code');
+  for (i = 0; i < codes.length;) {
+    code = codes[i];
+    if (code.parentNode.tagName !== 'PRE' && code.childElementCount === 0) {
+      text = code.textContent;
+      if (/^\\\((.|\s)+\\\)$/.test(text) || /^\\\[(.|\s)+\\\]$/.test(text) ||
+          /^\$\$(.|\s)+\$\$$/.test(text) ||
+          /^\\begin\{([^}]+)\}(.|\s)+\\end\{[^}]+\}$/.test(text)) {
+        code.outerHTML = code.innerHTML;  // remove <code></code>
+        continue;
+      }
+    }
+    i++;
+  }
+};
+slideshow._releaseMath(document);
+</script>
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+(function () {
+  var script = document.createElement('script');
+  script.type = 'text/javascript';
+  script.src  = 'https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-MML-AM_CHTML';
+  if (location.protocol !== 'file:' && /^https?:/.test(script.src))
+    script.src  = script.src.replace(/^https?:/, '');
+  document.getElementsByTagName('head')[0].appendChild(script);
+})();
+</script>
+  </body>
+</html>
